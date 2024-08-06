@@ -17,7 +17,6 @@ class StreamCamera extends StatefulWidget {
 
 class _StreamCameraState extends State<StreamCamera> {
   final StreamSocket streamSocket = StreamSocket();
-  Image? lastImage;
 
 void connectAndListen(){
   io.Socket socket = io.io('http://${widget.serverUrl}:${widget.port}/${widget.event}',
