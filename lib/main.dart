@@ -32,6 +32,8 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  int clientId = DateTime.now().millisecondsSinceEpoch;
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -39,21 +41,17 @@ class _MyHomePageState extends State<MyHomePage> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
       ),
-      body: const Center(
+      body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            Text(
+            const Text(
               'Using camera with websocket:',
             ),
             SizedBox(
-              width: 300,
-              height: 300,
-              child: StreamCamera(
-                serverUrl: '127.0.0.1',
-                port: 10100,
-                event: 'camera',
-              ),
+              width: 500,
+              height: 500,
+              child: StreamCamera(address: 'ws://localhost:8000/ws/camera', clientID: clientId,),
             ),
           ],
         ),

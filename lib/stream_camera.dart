@@ -2,14 +2,14 @@ import 'dart:convert';
 
 import 'package:camera_websocket/stream_socket.dart';
 import 'package:flutter/material.dart';
-import 'package:socket_io_client/socket_io_client.dart' as io;
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 class StreamCamera extends StatefulWidget {
-  final String serverUrl;
-  final int port;
-  final String event;
+  final String address;
+  final int clientID;
 
-  const StreamCamera({required this.serverUrl, required this.port, required this.event, super.key});
+  const StreamCamera(
+      {super.key, required this.address, required this.clientID});
 
   @override
   State<StreamCamera> createState() => _StreamCameraState();
@@ -17,22 +17,7 @@ class StreamCamera extends StatefulWidget {
 
 class _StreamCameraState extends State<StreamCamera> {
   final StreamSocket streamSocket = StreamSocket();
-
-void connectAndListen(){
-  io.Socket socket = io.io('http://${widget.serverUrl}:${widget.port}/${widget.event}',
-      io.OptionBuilder()
-       .setTransports(['websocket']).build());
-
-    socket.onConnect((_) {
-     debugPrint('connect');
-    });
-
-    socket.on('camera_frame', (data) {
-      final String base64Image = data['image'];
-      streamSocket.addResponse(base64Image);
-      });
-    socket.onDisconnect((_) => debugPrint('disconnect'));
-  }  
+  late WebSocketChannel channel;
 
   @override
   void initState() {
@@ -40,31 +25,43 @@ void connectAndListen(){
     connectAndListen();
   }
 
+  void connectAndListen() {
+    channel = WebSocketChannel.connect(
+      Uri.parse(widget.address),
+    );
+
+    channel.stream.listen((message) {
+      try {
+        streamSocket.addResponse(message);
+      } catch (e) {
+        debugPrint('Received text message: $message');
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    debugPrint('build');
-
     return Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: StreamBuilder(
-          stream: streamSocket.getResponse,
-          builder: (context, snapshot) {
-            if (snapshot.hasData) {
-              final imageBytes = base64.decode(snapshot.data!);
-      
-              final image = Image.memory(
-                  imageBytes,
-                  fit: BoxFit.scaleDown,
-                  gaplessPlayback: true,
-                );
-              return image;
-            } else if (snapshot.hasError) {
-              return Text('Erro: ${snapshot.error}');
-            } else {
-              return const CircularProgressIndicator();
-            }
-          },
-        ),
-      );
+      padding: const EdgeInsets.all(8.0),
+      child: StreamBuilder(
+        stream: streamSocket.getResponse,
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            final imageBytes = base64.decode(snapshot.data!);
+
+            final image = Image.memory(
+              imageBytes,
+              fit: BoxFit.scaleDown,
+              gaplessPlayback: true,
+            );
+            return image;
+          } else if (snapshot.hasError) {
+            return Text('Erro: ${snapshot.error}');
+          } else {
+            return const CircularProgressIndicator();
+          }
+        },
+      ),
+    );
   }
 }
